@@ -33,4 +33,5 @@ dependencies {
     compile 'com.connectedlab.reactnative:react-native-connected-common:0.0.1@aar'
     compile 'com.facebook.react:react-native:0.20.1'
     compile 'com.jakewharton.timber:timber:4.3.1'
+    compile 'org.apache.commons:commons-math3:3.6.1'
 }
