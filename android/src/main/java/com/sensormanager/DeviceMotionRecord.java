@@ -1,13 +1,19 @@
 package com.sensormanager;
 
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.util.Log;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.WritableMap;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.commons.math3.linear.MatrixUtils;
 
 public class DeviceMotionRecord extends SensorRecord {
 
@@ -39,17 +45,24 @@ public class DeviceMotionRecord extends SensorRecord {
     }
 
     protected double[][] getMFromRotationVector(double[] rotationVector) {
-        double sinThetaSur2 = MatrixUtils.createRealMatrix(rotationVector).getNorm();
+        double sinThetaSur2 = Math.abs(MatrixUtils.createRealVector(rotationVector).getNorm());
         double cosThetaSur2 = Math.sqrt(1 - sinThetaSur2 * sinThetaSur2);
 
-        double[] q = [
+        Log.v("sinThetaSur2", Double.toString(sinThetaSur2));
+        Log.v("1 - sinThetaSur2 * sinThetaSur2", Double.toString(1 - sinThetaSur2 * sinThetaSur2));
+        Log.v("cosThetaSur2", Double.toString(cosThetaSur2));
+        Log.v("rotationVector[0]", Double.toString(rotationVector[0]));
+        Log.v("rotationVector[1]", Double.toString(rotationVector[1]));
+        Log.v("rotationVector[2]", Double.toString(rotationVector[2]));
+
+        double[] q = {
             cosThetaSur2,
             rotationVector[0],
             rotationVector[1],
             rotationVector[2]
-        ];
+        };
 
-        double s = 1 / MatrixUtils.createRealMatrix(q).getNorm();
+        double s = 1 / MatrixUtils.createRealVector(q).getNorm();
         double qr = q[0];
         double qi = q[1];
         double qj = q[2];
@@ -76,6 +89,17 @@ public class DeviceMotionRecord extends SensorRecord {
         return MatrixUtils.createRealMatrix(matrixData).transpose().getData();
     }
 
+    protected static double[] convertFloatsToDoubles(float[] input) {
+        if (input == null) {
+            return null; // Or throw an exception - your choice
+        }
+        double[] output = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            output[i] = input[i];
+        }
+        return output;
+    }
+
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         Sensor mySensor = sensorEvent.sensor;
@@ -83,7 +107,7 @@ public class DeviceMotionRecord extends SensorRecord {
             WritableMap map = Arguments.createMap();
             WritableMap rotationMap = Arguments.createMap();
 
-            double[][] currentRotationMatrix = getMFromRotationVector(sensorEvent.values);
+            double[][] currentRotationMatrix = getMFromRotationVector(convertFloatsToDoubles(sensorEvent.values));
 
             rotationMap.putDouble("m11", currentRotationMatrix[0][0]);
             rotationMap.putDouble("m12", currentRotationMatrix[0][1]);
@@ -99,7 +123,8 @@ public class DeviceMotionRecord extends SensorRecord {
 
             map.putMap(getDataMapKey(), rotationMap);
 
-            sendEvent(getEventNameKey(), map);
+            // Log.v("onSensorChanged map", Double.toString(currentRotationMatrix[0][0]));
+            // sendEvent(getEventNameKey(), map);
         }
     }
 
