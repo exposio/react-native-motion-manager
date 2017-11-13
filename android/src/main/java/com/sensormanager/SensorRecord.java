@@ -6,7 +6,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.annotation.Nullable;
 
-import com.connectedlab.reactnative.commonlib.ErrorBuilder;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -51,7 +50,12 @@ public abstract class SensorRecord extends ReactContextBaseJavaModule implements
             sensorManager.registerListener(this, sensor, uSecs);
             onStarted.invoke((Object) null);
         } else {
-            onStarted.invoke(new ErrorBuilder().toJavaScriptError("No " + getName() + " sensor"));
+            RuntimeException exception = new RuntimeException("No " + getName() + " sensor");
+            WritableMap error = Arguments.createMap();
+            error.putString("name", exception.getClass().getSimpleName());
+            error.putString("message", exception.toString());
+            error.putString("stack", ExceptionUtils.getStackTrace(exception));
+            onStarted.invoke(error);
         }
     }
 
