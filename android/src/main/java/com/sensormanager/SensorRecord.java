@@ -13,6 +13,8 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
