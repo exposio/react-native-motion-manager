@@ -4,7 +4,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Callback;
@@ -19,11 +22,13 @@ import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
 
+
 public abstract class SensorRecord extends ReactContextBaseJavaModule implements SensorEventListener {
 
     private SensorManager sensorManager;
     private Sensor sensor;
     private double delaySeconds;
+    private long lastUpdate = 0;
 
     protected abstract int getSensorType();
 
@@ -43,7 +48,7 @@ public abstract class SensorRecord extends ReactContextBaseJavaModule implements
     protected void startUpdates(Callback onStarted) {
         if ((sensor = sensorManager.getDefaultSensor(getSensorType())) != null) {
             int uSecs = (int) (this.delaySeconds * TimeUnit.MICROSECONDS.convert(1, TimeUnit.SECONDS));
-            Timber.d("Registering " + getName() + " with %s ms for ", uSecs, this);
+            Log.v("SENSOR", "Registering " + getName() + " with " + uSecs + " us");
             /*
              * Do not use this version (in API 19) to save battery:
              * public boolean registerListener(SensorEventListener listener, Sensor sensor, int samplingPeriodUs, int maxReportLatencyUs) {
@@ -79,16 +84,22 @@ public abstract class SensorRecord extends ReactContextBaseJavaModule implements
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         Sensor mySensor = sensorEvent.sensor;
+
         if (mySensor.getType() == getSensorType()) {
-            WritableMap map = Arguments.createMap();
-            WritableMap rotationRate = Arguments.createMap();
+            long curTime = System.currentTimeMillis();
+            if ((curTime - lastUpdate) > (delaySeconds * 1000)) {
+                lastUpdate = curTime;
 
-            rotationRate.putDouble("x", sensorEvent.values[0]);
-            rotationRate.putDouble("y", sensorEvent.values[1]);
-            rotationRate.putDouble("z", sensorEvent.values[2]);
-            map.putMap(getDataMapKey(), rotationRate);
+                WritableMap map = Arguments.createMap();
+                WritableMap rotationRate = Arguments.createMap();
 
-            sendEvent(getEventNameKey(), map);
+                rotationRate.putDouble("x", sensorEvent.values[0]);
+                rotationRate.putDouble("y", sensorEvent.values[1]);
+                rotationRate.putDouble("z", sensorEvent.values[2]);
+                map.putMap(getDataMapKey(), rotationRate);
+
+                sendEvent(getEventNameKey(), map);
+            }
         }
     }
 
